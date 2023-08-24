@@ -692,9 +692,9 @@ class Detector(object):
             batch_data["Image"], landmarks, **facepose_model_kwargs
         )
         aus = self.detect_aus(batch_data["Image"], landmarks, **au_model_kwargs)
-        emotions = self.detect_emotions(
-            batch_data["Image"], faces, landmarks, **emotion_model_kwargs
-        )
+        #emotions = self.detect_emotions(
+        #    batch_data["Image"], faces, landmarks, **emotion_model_kwargs
+        #)
 
         faces = _inverse_face_transform(faces, batch_data)
         landmarks = _inverse_landmark_transform(landmarks, batch_data)
@@ -703,7 +703,7 @@ class Detector(object):
         faces, poses = self._match_faces_to_poses(
             faces, poses_dict["faces"], poses_dict["poses"]
         )
-        return faces, landmarks, poses, aus, emotions
+        return faces, landmarks, poses, aus#, emotions
 
     def detect_image(
         self,
@@ -773,7 +773,8 @@ class Detector(object):
             batch_output = []
 
             for batch_id, batch_data in enumerate(tqdm(data_loader)):
-                faces, landmarks, poses, aus, emotions = self._run_detection_waterfall(
+                #faces, landmarks, poses, aus, emotions = self._run_detection_waterfall(
+                faces, landmarks, poses, aus = self._run_detection_waterfall(
                     batch_data,
                     face_detection_threshold,
                     face_model_kwargs,
