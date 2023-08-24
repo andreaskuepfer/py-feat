@@ -688,9 +688,9 @@ class Detector(object):
             detected_faces=faces,
             **landmark_model_kwargs,
         )
-        poses_dict = self.detect_facepose(
-            batch_data["Image"], landmarks, **facepose_model_kwargs
-        )
+        #poses_dict = self.detect_facepose(
+        #    batch_data["Image"], landmarks, **facepose_model_kwargs
+        #)
         aus = self.detect_aus(batch_data["Image"], landmarks, **au_model_kwargs)
         #emotions = self.detect_emotions(
         #    batch_data["Image"], faces, landmarks, **emotion_model_kwargs
@@ -700,10 +700,10 @@ class Detector(object):
         landmarks = _inverse_landmark_transform(landmarks, batch_data)
 
         # match faces to poses - sometimes face detector finds different faces than pose detector.
-        faces, poses = self._match_faces_to_poses(
-            faces, poses_dict["faces"], poses_dict["poses"]
-        )
-        return faces, landmarks, poses, aus#, emotions
+        #faces, poses = self._match_faces_to_poses(
+        #    faces, poses_dict["faces"], poses_dict["poses"]
+        #)
+        return faces, landmarks, aus#, emotions
 
     def detect_image(
         self,
@@ -857,7 +857,8 @@ class Detector(object):
         batch_output = []
 
         for batch_data in tqdm(data_loader):
-            faces, landmarks, poses, aus, emotions = self._run_detection_waterfall(
+            #faces, landmarks, poses, aus, emotions = self._run_detection_waterfall(
+            faces, landmarks, aus = self._run_detection_waterfall(
                 batch_data,
                 face_detection_threshold,
                 face_model_kwargs,
@@ -872,9 +873,9 @@ class Detector(object):
             output = self._create_fex(
                 faces,
                 landmarks,
-                poses,
+                #poses,
                 aus,
-                emotions,
+                #emotions,
                 batch_data["FileName"],
                 frames,
             )
@@ -889,7 +890,7 @@ class Detector(object):
         return batch_output.set_index("frame", drop=False)
 
     def _create_fex(
-        self, faces, landmarks, poses, aus, emotions, file_names, frame_counter
+        self, faces, landmarks, aus, file_names, frame_counter
     ):
         """Helper function to create a Fex instance using detector output
 
@@ -931,19 +932,12 @@ class Detector(object):
                     columns=self.info["au_presence_columns"],
                     index=[i],
                 )
-                emotions_df = pd.DataFrame(
-                    {x: np.nan for x in self.info["emotion_model_columns"]},
-                    columns=self.info["emotion_model_columns"],
-                    index=[i],
-                )
                 input_df = pd.DataFrame(file_names[i], columns=["input"], index=[i])
                 tmp_df = pd.concat(
                     [
                         facebox_df,
                         landmarks_df,
-                        facepose_df,
                         aus_df,
-                        emotions_df,
                         input_df,
                     ],
                     axis=1,
@@ -969,12 +963,6 @@ class Detector(object):
                     index=[j],
                 )
 
-                facepose_df = pd.DataFrame(
-                    [poses[i][j]],
-                    columns=self.info["facepose_model_columns"],
-                    index=[j],
-                )
-
                 landmarks_df = pd.DataFrame(
                     [landmarks[i][j].flatten(order="F")],
                     columns=self.info["face_landmark_columns"],
@@ -986,15 +974,7 @@ class Detector(object):
                     columns=self.info["au_presence_columns"],
                     index=[j],
                 )
-
-                emotions_df = pd.DataFrame(
-                    emotions[i][j, :].reshape(
-                        1, len(self.info["emotion_model_columns"])
-                    ),
-                    columns=self.info["emotion_model_columns"],
-                    index=[j],
-                )
-
+                
                 input_df = pd.DataFrame(
                     file_names[i],
                     columns=["input"],
@@ -1007,7 +987,6 @@ class Detector(object):
                         landmarks_df,
                         facepose_df,
                         aus_df,
-                        emotions_df,
                         input_df,
                     ],
                     axis=1,
@@ -1026,10 +1005,8 @@ class Detector(object):
         return Fex(
             out,
             au_columns=self.info["au_presence_columns"],
-            emotion_columns=self.info["emotion_model_columns"],
             facebox_columns=self.info["face_detection_columns"],
             landmark_columns=self.info["face_landmark_columns"],
-            facepose_columns=self.info["facepose_model_columns"],
             detector="Feat",
             face_model=self.info["face_model"],
             landmark_model=self.info["landmark_model"],
